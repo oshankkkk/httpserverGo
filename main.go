@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"io"
-	"os"
 )
 func check(err error){
 	if err!=nil{
@@ -12,10 +12,12 @@ func check(err error){
 	}
 }
 func main(){
-	fmt.Println("this is my http server")
-	file,err:=os.Open("message.txt")	
+	listner,err:=net.Listen("tcp",":8080")
 	check(err)
-	stream:=make([]byte,8)
+	file,err:=listner.Accept()
+	check(err)
+	
+stream:=make([]byte,8)
 
 	var sentence string
 	var mylist []string
@@ -40,4 +42,5 @@ func main(){
 for _,line:=range mylist{
 	fmt.Println(line)
 }
+
 }
