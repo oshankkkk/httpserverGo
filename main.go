@@ -13,6 +13,7 @@ func check(err error){
 func main(){
 	listner,err:=net.Listen("tcp",":8080")
 	check(err)
+	for{
 	file,err:=listner.Accept()
 	check(err)
 	stream:=make([]byte,8)
@@ -52,4 +53,5 @@ n,err:=file.Write([]byte(msg))
 check(err)
 fmt.Println(n)
 fmt.Println("http response send")
+}
 }
