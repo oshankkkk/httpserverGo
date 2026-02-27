@@ -1,8 +1,10 @@
 package main
+
 import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
 func check(err error){
 	if err!=nil{
@@ -37,10 +39,13 @@ return mylist
 func writeTofile(request []string){
 	logfile,err:=os.OpenFile("serverlogs.txt",os.O_APPEND|os.O_CREATE|os.O_RDWR,0666)
 	check(err)
-
+	fmt.Println("passing bout to happen")
+	parse(request[0])
+	fmt.Println("passing has happen")
 	fmt.Println("file was made nicely")
 	for _,line:=range request{
 		//fmt.Println(line)
+
 		_,err:=logfile.WriteString(line+"\n")
 		check(err)
 
@@ -55,6 +60,21 @@ func sendResponse(file net.Conn){
 
 
 }
+func parse(requestLine string){
+	complist:=strings.Split(requestLine," ")	
+	fmt.Println("method",complist[0],"path",complist[1])
+	method:=complist[0]
+	path:=complist[1]
+	if method == "GET" && path == "/"{
+		fmt.Println("home response")
+	}else if method == "GET" && path == "/users"{
+		fmt.Println("user response")
+	}else{
+		fmt.Println("404 err")
+	}
+
+}
+
 func main(){
 	listner,err:=net.Listen("tcp",":8080")
 	check(err)
