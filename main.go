@@ -69,6 +69,10 @@ buff:=[]string{}
 		}
 
 	}
+temp = strings.TrimSpace(temp)
+	if temp != "" {
+		buff = append(buff, temp)
+	}
 	return buff
 }
 
