@@ -26,7 +26,6 @@ func TestFormatBytes_ParsesAllLines(t *testing.T) {
 		"User-Agent: curl/8.0.0",
 	}
 
-	// This will currently FAIL because formatBytes() drops the last line.
 	if len(lines) != len(want) {
 		t.Fatalf("expected %d lines, got %d: %#v", len(want), len(lines), lines)
 	}
@@ -36,6 +35,39 @@ func TestFormatBytes_ParsesAllLines(t *testing.T) {
 		}
 	}
 }
+// idk what t *testing.T mean, will learn it on the 2nd
+func TestHeaderFieldParser(t *testing.T){
+
+	in:=[]string{
+"Host: localhost:42069",
+"User-Agent: curl/7.81.0",
+"Accept: *//*",
+"Content-Length: 21"}
+
+headermap,bodyflag:=headerfieldParser(in)
+want:=map[string]string{
+	"Host":"localhost:42069",
+"User-Agent": "curl/7.81.0",
+"Accept": "*//*",
+"Content-Length": "21"}
+	if len(headermap) != len(want) {
+		t.Fatalf("expected %d header fields, got %d: %#v", len(want), len(headermap), headermap)
+	}
+
+	for k, v := range want {
+		if got, ok := headermap[k]; !ok {
+			t.Fatalf("expected key %q missing in header map", k)
+		} else if got != v {
+			t.Fatalf("for key %q, expected value %q, got %q", k, v, got)
+		}
+	}
+
+	if !bodyflag {
+		t.Fatalf("expected bodyflag = true, got false")
+	}
+}
+
+
 
 func TestHeaderParser_OK(t *testing.T) {
 	in := []string{

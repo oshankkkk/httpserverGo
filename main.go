@@ -94,7 +94,35 @@ func headerParser(buff []string) (StartLine,error){
 	if startline.version!="HTTP/1.1"{
 			return StartLine{},errors.New("wrong http version")
 	}
-return startline,nil
+	// buf[1:] are headers
+	headermap,hasmessagebody:=headerfieldParser(buff[1:])
+	fmt.Println("this has a message body: ",hasmessagebody)
+	for key,value:=range headermap{
+		fmt.Println(key,":",value)
+
+	}
+	return startline,nil
+	}
+	
+
+func headerfieldParser(buff []string)(map[string]string,bool){
+
+	headermap:=make(map[string]string)
+	seperator:=":"
+	var hasmessegebody bool
+	for _,value:=range buff{
+		value=string(value)
+		index:=strings.Index(value,seperator)	
+		fieldName:=value[:index]
+		if strings.ToLower(fieldName)=="content-length"{
+			hasmessegebody=true
+		}
+		fieldValue:=value[index+1:]
+		headermap[fieldName]=strings.TrimSpace(fieldValue)
+
+	}
+	return headermap,hasmessegebody
+
 }
 
 /*
@@ -127,6 +155,8 @@ func parse(startLine string){
 	headermap["version"]=complist[2]
 }
 
+
+
 func main(){
 	listner,err:=net.Listen("tcp",":8080")
 	check(err)
@@ -138,7 +168,11 @@ func main(){
 		writeTofile(stringrequest)
 		startline,err:=headerParser(stringrequest)
 		check(err)
-		fmt.Println(startline.method," this is the method and header is successfully parsed")
+		fmt.Println(startline.method)
+		fmt.Println(startline.path)
+		fmt.Println(startline.version)
+
+
 		sendResponse(file)
 	}
 }
