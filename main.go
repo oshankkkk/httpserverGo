@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"unicode"
+	"strconv"
 )
 
 type StartLine struct{
@@ -19,7 +20,7 @@ type StartLine struct{
 func check(err error){
 	if err!=nil{
 		fmt.Println("error")
-	panic(err)
+		panic(err)
 	}
 }
 /*
@@ -32,32 +33,63 @@ Content-Length: 21
 {"flavor":"dark mode"}
 */
 
-func readConnection(file net.Conn) []byte{
+func readConnection(file net.Conn) {
 	stream:=make([]byte,1024)
 	buff := []byte{}
+	var contentlength int
+	contentlength=0
 	for{
 		count,err:=file.Read(stream) 
 		check(err)		
 		buff = append(buff, stream[:count]...)	
 		index:= bytes.Index(buff,[]byte("\r\n\r\n"))
+		//Do not stop the function that reads the bytes instead read until header end, parse the then if the body is there start reading else stop
 		if index!=-1{
-			return buff[:index]
-		 }
+		stringrequest:=formatBytes(buff[:index])
+		writeTofile(stringrequest)
+		startline,err,a:=headerParser(stringrequest)
+		check(err)
+		fmt.Println(startline.method)
+		fmt.Println(startline.path)
+		fmt.Println(startline.version)
+		contentlength=a	
+		fmt.Println("end of the headerParser", contentlength)
+
+		}
+	//parse the body if it is here by reading the test of the remainig bytes from the connection
+		//body is basically buff[index:]
+		if contentlength!=0{
+			// we are going to check the content legth, if the reminder of the bytes in buf[index:] is smaller than the content length this mean there is more bytes to be read
+			// so we go again through the loop and read the byte 
+			fmt.Println("comes to cl check", contentlength)
+			if len(buff[index+4:])<contentlength{
+				fmt.Println("comes to buf len check",len(buff[index+4:]))
+			continue
+			}
+			body:=bodyParser(buff[index+4:])
+			fmt.Println("this is the body")
+			fmt.Println(body)
+			break
+		}else{
+		break
+		}
 	}
 } 
-
+func bodyParser(buff []byte) string{
+	fullbodystring :=string(buff)
+	return fullbodystring
+}
 func sendResponse(file net.Conn){
+	fmt.Println("came to the respond e base")
 	msg:="HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello\r\n"
 	n,err:=file.Write([]byte(msg))
 	check(err)
 	fmt.Println(n)
 	fmt.Println("http response send")
-
-
 }
 
 func formatBytes(header []byte) []string {
-buff:=[]string{}
+	buff:=[]string{}
 	var temp string
 	for _,value:=range string(header){ 
 		if string(value)=="\n"{
@@ -65,18 +97,18 @@ buff:=[]string{}
 			buff = append(buff,temp) 
 			temp=""
 		}else{
-		temp+=string(value)
+			temp+=string(value)
 		}
 
 	}
-temp = strings.TrimSpace(temp)
+	temp = strings.TrimSpace(temp)
 	if temp != "" {
 		buff = append(buff, temp)
 	}
 	return buff
 }
 
-func headerParser(buff []string) (StartLine,error){
+func headerParser(buff []string) (StartLine,error,int){
 	startlinestring:=buff[0]
 	templist:=strings.Split(startlinestring," ")	
 	var startline StartLine
@@ -86,36 +118,36 @@ func headerParser(buff []string) (StartLine,error){
 	fmt.Println("these are the statss",startline.version,startline.method)
 	for i:=0;i<len(startline.method);i++{
 		if !unicode.IsUpper(rune(startline.method[i])){
-			return StartLine{},errors.New("incorrect http method")
-	} 
-}
+			return StartLine{},errors.New("incorrect http method"),0
+		} 
+	}
 	fmt.Println(startline.version, "this is the path" )
 	if startline.version!="HTTP/1.1"{
-			return StartLine{},errors.New("wrong http version")
+		return StartLine{},errors.New("wrong http version"),0
 	}
 	// buf[1:] are headers
-	headermap,hasmessagebody:=headerfieldParser(buff[1:])
-	fmt.Println("this has a message body: ",hasmessagebody)
+	headermap,contentlength:=headerfieldParser(buff[1:])
+
 	for key,value:=range headermap{
 		fmt.Println(key,":",value)
 	}
-	return startline,nil
-	}
-	
+	return startline,nil,contentlength
+}
+
 func fieldNameValidation(fieldName string) error{
 	for _,value:=range fieldName{
 		if !(value>='a' && value<='z'|| value>='A' && value<='Z'||strings.ContainsRune("!#$%&'*+-.^_`|~",value)||value>=0 && value<=9){
 			fmt.Println(fieldName)
 			return errors.New("invalid fieldName")
 		}
-}
+	}
 
-return nil
+	return nil
 }
-func headerfieldParser(buff []string)(map[string]string,bool){
+func headerfieldParser(buff []string)(map[string]string,int){
 	headermap:=make(map[string]string)
 	seperator:=":"
-	var hasmessegebody bool
+	var contentlength int
 	for _,value:=range buff{
 		fmt.Println("value",value)
 		value=string(value)
@@ -124,21 +156,24 @@ func headerfieldParser(buff []string)(map[string]string,bool){
 		fieldName:=value[:index]
 		err:=fieldNameValidation(fieldName)	
 		check(err)
-
-		if strings.ToLower(fieldName)=="content-length"{
-			hasmessegebody=true
-		}
+		
 		fieldValue:=value[index+1:]
 
+		if strings.ToLower(fieldName)=="content-length"{
+
+			contentlength,err=strconv.Atoi(fieldValue)
+			check(err)
+
+		}
 		_,ok:=headermap[fieldName]
 		if ok==false{
-		headermap[fieldName]=strings.TrimSpace(fieldValue)
+			headermap[fieldName]=strings.TrimSpace(fieldValue)
 		}else{
-	
-		headermap[fieldName]+=","+strings.TrimSpace(fieldValue)
+
+			headermap[fieldName]+=","+strings.TrimSpace(fieldValue)
 		}
 	}
-	return headermap,hasmessegebody
+	return headermap,contentlength
 
 }
 
@@ -180,17 +215,9 @@ func main(){
 	for{
 		file,err:=listner.Accept()
 		check(err)
-		request:=readConnection(file)
-		stringrequest:=formatBytes(request)
-		writeTofile(stringrequest)
-		startline,err:=headerParser(stringrequest)
-		check(err)
-		fmt.Println(startline.method)
-		fmt.Println(startline.path)
-		fmt.Println(startline.version)
-
-
+		readConnection(file)
 		sendResponse(file)
+
 	}
 }
 
