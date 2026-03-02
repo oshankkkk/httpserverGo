@@ -87,7 +87,6 @@ func headerParser(buff []string) (StartLine,error){
 	for i:=0;i<len(startline.method);i++{
 		if !unicode.IsUpper(rune(startline.method[i])){
 			return StartLine{},errors.New("incorrect http method")
-
 	} 
 }
 	fmt.Println(startline.version, "this is the path" )
@@ -99,27 +98,45 @@ func headerParser(buff []string) (StartLine,error){
 	fmt.Println("this has a message body: ",hasmessagebody)
 	for key,value:=range headermap{
 		fmt.Println(key,":",value)
-
 	}
 	return startline,nil
 	}
 	
+func fieldNameValidation(fieldName string) error{
+	for _,value:=range fieldName{
+		if !(value>='a' && value<='z'|| value>='A' && value<='Z'||strings.ContainsRune("!#$%&'*+-.^_`|~",value)||value>=0 && value<=9){
+			fmt.Println(fieldName)
+			return errors.New("invalid fieldName")
+		}
+}
 
+return nil
+}
 func headerfieldParser(buff []string)(map[string]string,bool){
-
 	headermap:=make(map[string]string)
 	seperator:=":"
 	var hasmessegebody bool
 	for _,value:=range buff{
+		fmt.Println("value",value)
 		value=string(value)
+		fmt.Println("value string",value)
 		index:=strings.Index(value,seperator)	
 		fieldName:=value[:index]
+		err:=fieldNameValidation(fieldName)	
+		check(err)
+
 		if strings.ToLower(fieldName)=="content-length"{
 			hasmessegebody=true
 		}
 		fieldValue:=value[index+1:]
-		headermap[fieldName]=strings.TrimSpace(fieldValue)
 
+		_,ok:=headermap[fieldName]
+		if ok==false{
+		headermap[fieldName]=strings.TrimSpace(fieldValue)
+		}else{
+	
+		headermap[fieldName]+=","+strings.TrimSpace(fieldValue)
+		}
 	}
 	return headermap,hasmessegebody
 
