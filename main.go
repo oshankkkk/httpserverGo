@@ -21,6 +21,7 @@ func check(err error){
 	if err!=nil{
 		fmt.Println("error")
 		panic(err)
+		
 	}
 }
 /*
@@ -79,15 +80,6 @@ func bodyParser(buff []byte) string{
 	fullbodystring :=string(buff)
 	return fullbodystring
 }
-func sendResponse(file net.Conn){
-	fmt.Println("came to the respond e base")
-	msg:="HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello\r\n"
-	n,err:=file.Write([]byte(msg))
-	check(err)
-	fmt.Println(n)
-	fmt.Println("http response send")
-}
-
 func formatBytes(header []byte) []string {
 	buff:=[]string{}
 	var temp string
@@ -189,7 +181,7 @@ func writeTofile(request []string){
 	check(err)
 	fmt.Println("passing bout to happen")
 	//parse(request[0])
-	fmt.Println("passing has happen")
+	fmt.Println("passing done")
 	fmt.Println("file was made nicely")
 	for _,line:=range request{
 		//fmt.Println(line)
@@ -205,6 +197,31 @@ func parse(startLine string){
 	headermap["method"]=complist[0]
 	headermap["path"]=complist[1]
 	headermap["version"]=complist[2]
+}
+func writingStatusCode(code int){
+	switch code {
+		case 200:
+		fmt.Println("god request")
+		case 400:
+		fmt.Println("bad one")
+		case 500:
+		fmt.Println("server err")
+	}
+
+		
+}
+
+
+
+
+func sendResponse(file net.Conn){
+	fmt.Println("came to the respond e base")
+	//msg2:="HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello\r\n"
+	msg:="HTTP/1.1 200 OK\r\n\r\nHello\r\n"
+	n,err:=file.Write([]byte(msg))
+	check(err)
+	fmt.Println(n)
+	fmt.Println("http response send")
 }
 
 
