@@ -153,7 +153,7 @@ func headerfieldParser(buff []string)(map[string]string,int){
 
 		if strings.ToLower(fieldName)=="content-length"{
 
-			contentlength,err=strconv.Atoi(fieldValue)
+			contentlength,err=strconv.Atoi(strings.TrimSpace(fieldValue))
 			check(err)
 
 		}

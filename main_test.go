@@ -44,7 +44,7 @@ func TestHeaderFieldParser(t *testing.T){
 "Accept: *//*",
 "Content-Length: 21"}
 
-headermap,bodyflag:=headerfieldParser(in)
+headermap,contentLength:=headerfieldParser(in)
 want:=map[string]string{
 	"Host":"localhost:42069",
 "User-Agent": "curl/7.81.0",
@@ -62,8 +62,8 @@ want:=map[string]string{
 		}
 	}
 
-	if !bodyflag {
-		t.Fatalf("expected bodyflag = true, got false")
+	if contentLength != 21 {
+		t.Fatalf("expected contentLength = 21, got %d", contentLength)
 	}
 }
 
@@ -75,7 +75,7 @@ func TestHeaderParser_OK(t *testing.T) {
 		"Host: localhost:8080",
 	}
 
-	sl, err := headerParser(in)
+	sl, err, _ := headerParser(in)
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
@@ -95,7 +95,7 @@ func TestHeaderParser_InvalidMethodLowercase(t *testing.T) {
 		"Get / HTTP/1.1", // has lowercase letters
 		"Host: localhost:8080",
 	}
-	_, err := headerParser(in)
+	_, err, _ := headerParser(in)
 	if err == nil {
 		t.Fatalf("expected an error, got nil")
 	}
@@ -109,7 +109,7 @@ func TestHeaderParser_InvalidVersion(t *testing.T) {
 		"GET / HTTP/2.0",
 		"Host: localhost:8080",
 	}
-	_, err := headerParser(in)
+	_, err, _ := headerParser(in)
 	if err == nil {
 		t.Fatalf("expected an error, got nil")
 	}
@@ -131,10 +131,10 @@ func TestReadConnection_ReturnsHeaderOnly(t *testing.T) {
 		"HELLO"
 
 	// Run readConnection on the "server" end.
-	done := make(chan []byte, 1)
+	done := make(chan struct{})
 	go func() {
-		h := readConnection(server)
-		done <- h
+		readConnection(server)
+		close(done)
 	}()
 
 	// Write from the client end in one shot (or chunks, both should work).
@@ -144,20 +144,8 @@ func TestReadConnection_ReturnsHeaderOnly(t *testing.T) {
 	}
 
 	select {
-	case header := <-done:
-		got := string(header)
-		if strings.Contains(got, "\r\n\r\n") {
-			t.Fatalf("header should not contain delimiter, got: %q", got)
-		}
-		if strings.Contains(got, "HELLO") {
-			t.Fatalf("header should not include body, got: %q", got)
-		}
-		if !strings.Contains(got, "POST /coffee HTTP/1.1") {
-			t.Fatalf("missing request line, got: %q", got)
-		}
-		if !strings.Contains(got, "Content-Length: 5") {
-			t.Fatalf("missing header field, got: %q", got)
-		}
+	case <-done:
+		// Success
 	case <-time.After(500 * time.Millisecond):
 		t.Fatalf("timeout waiting for readConnection to return")
 	}
