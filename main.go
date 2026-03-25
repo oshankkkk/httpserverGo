@@ -1,3 +1,13 @@
+/*
+-- sample req --
+POST /coffee HTTP/1.1
+Host: localhost:42069
+User-Agent: curl/7.81.0
+Accept: */ /*
+Content-Length: 21
+
+{"flavor":"dark mode"}
+*/
 package main
 
 import (
@@ -28,15 +38,6 @@ func check(err error) {
 	}
 }
 
-/*
-POST /coffee HTTP/1.1
-Host: localhost:42069
-User-Agent: curl/7.81.0
-Accept: */ /*
-Content-Length: 21
-
-{"flavor":"dark mode"}
-*/
 
 func readConnection(file net.Conn) {
 	stream := make([]byte, 1024)
@@ -49,7 +50,8 @@ func readConnection(file net.Conn) {
 		check(err)
 		buff = append(buff, stream[:count]...)
 		index := bytes.Index(buff, []byte("\r\n\r\n"))
-		//Do not stop the function that reads the bytes instead read until header end, parse the then if the body is there start reading else stop
+		//Do not stop the function that reads the bytes 
+		//Instead read until header end, parse the then if the body is there start reading else stop
 		if index != -1 {
 			stringrequest := formatBytes(buff[:index])
 			writeTofile(stringrequest)
