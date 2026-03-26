@@ -2,7 +2,7 @@ package main
 import(
 "net"
 )
-func sendResponse(file net.Conn) {
+func SendResponse(file net.Conn) {
 	msg := "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello\r\n"
 	n, err := file.Write([]byte(msg))
 	check(err)

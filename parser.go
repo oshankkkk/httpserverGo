@@ -1,9 +1,11 @@
 package main
-import(
-"strings"
-"unicode"
-"errors"
-"strconv"
+
+import (
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
+	"unicode"
 )
 
 /*
@@ -17,9 +19,13 @@ type StartLine struct {
 	path    string
 	version string
 }
-func headerParser(buff []string) (StartLine, error, int) {
+
+func HeaderParser(buff []string) (StartLine, error, int) {
 	startlinestring := buff[0]
-	templist := strings.Split(startlinestring, " ")
+	templist := strings.Fields(startlinestring)
+	if len(templist)!=3{
+			return StartLine{}, errors.New("malformed method"), 0
+	}
 	var startline StartLine
 	startline.method = templist[0]
 	startline.path = templist[1]
@@ -32,9 +38,13 @@ func headerParser(buff []string) (StartLine, error, int) {
 	if startline.version != "HTTP/1.1" {
 		return StartLine{}, errors.New("wrong http version"), 0
 	}
-	// buf[1:] are headers
-	headermap, contentlength := headerfieldParser(buff[1:])
 
+	// buf[1:] are headers
+	headermap, contentlength,err := HeaderfieldParser(buff[1:])
+	if err!=nil{
+		fmt.Println(err )
+		return StartLine{},err,0
+	}
 	logger.Info("parsed headers", "headers", headermap, "content_length", contentlength)
 	return startline, nil, contentlength
 }
@@ -49,48 +59,42 @@ func fieldNameValidation(fieldName string) error {
 
 	return nil
 }
-func headerfieldParser(buff []string) (map[string]string, int) {
+
+func HeaderfieldParser(buff []string) (map[string]string, int,error) {
 	headermap := make(map[string]string)
+	//seperator := ":"
 	seperator := ":"
+
 	var contentlength int
 	for _, value := range buff {
-		value = string(value)
+		fmt.Println(value,"the val")
 		index := strings.Index(value, seperator)
-		fieldName := value[:index]
-		err := fieldNameValidation(fieldName)
+		if index==-1{
+			return nil,0,errors.New("malformed method")
+		}
+	
+	fieldName := value[:index]
+	err := fieldNameValidation(fieldName)
+	check(err)
+
+	fieldValue := value[index+1:]
+
+	if strings.ToLower(fieldName) == "content-length" {
+
+		contentlength, err = strconv.Atoi(strings.TrimSpace(fieldValue))
 		check(err)
-
-		fieldValue := value[index+1:]
-
-		if strings.ToLower(fieldName) == "content-length" {
-
-			contentlength, err = strconv.Atoi(strings.TrimSpace(fieldValue))
-			check(err)
-
-		}
-		_, ok := headermap[fieldName]
-		if ok == false {
-			headermap[fieldName] = strings.TrimSpace(fieldValue)
-		} else {
-
-			headermap[fieldName] += "," + strings.TrimSpace(fieldValue)
-		}
 	}
-	return headermap, contentlength
-
+	_, ok := headermap[fieldName]
+	if ok == false {
+		headermap[fieldName] = strings.TrimSpace(fieldValue)
+	} else {
+		headermap[fieldName] += "," + strings.TrimSpace(fieldValue)
+	}
+}
+return headermap, contentlength,nil
 }
 
-func parse(startLine string) {
-	headermap := make(map[string]string)
-	complist := strings.Split(startLine, " ")
-	logger.Info("parsed start line", "method", complist[0], "path", complist[1], "version", complist[2])
-	headermap["method"] = complist[0]
-	headermap["path"] = complist[1]
-	headermap["version"] = complist[2]
-}
-
-
-func bodyParser(buff []byte) string {
+func BodyParser(buff []byte) string {
 	fullbodystring := string(buff)
 	return fullbodystring
 }

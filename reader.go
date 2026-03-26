@@ -42,7 +42,7 @@ func writeTofile(request []string) {
 
 
 
-func readConnection(file net.Conn) {
+func ReadConnection(file net.Conn) {
 	stream := make([]byte, 1024)
 	buff := []byte{}
 	var contentlength int
@@ -58,7 +58,7 @@ func readConnection(file net.Conn) {
 		if index != -1 {
 			stringrequest := formatBytes(buff[:index])
 			writeTofile(stringrequest)
-			startline, err, a := headerParser(stringrequest)
+			startline, err, a := HeaderParser(stringrequest)
 			check(err)
 			contentlength = a
 			logger.Info("parsed request",
@@ -76,13 +76,15 @@ func readConnection(file net.Conn) {
 			//if the reminder of the bytes in buf[index:] is smaller than the content length this mean there is more bytes to be read
 			// so we go again through the loop and read the byte
 			if len(buff[index+4:]) < contentlength {
+
 				logger.Info("waiting for remaining body bytes",
 					"content_length", contentlength,
 					"bytes_received", len(buff[index+4:]),
 				)
+
 				continue
 			}
-			body := bodyParser(buff[index+4:])
+			body := BodyParser(buff[index+4:])
 			logger.Info("parsed request body", "body_length", len(body))
 			break
 		} else {

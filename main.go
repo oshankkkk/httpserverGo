@@ -1,12 +1,5 @@
 /*
 -- sample req --
-POST /coffee HTTP/1.1
-Host: localhost:42069
-User-Agent: curl/7.81.0
-Accept: */ /*
-Content-Length: 21
-
-{"flavor":"dark mode"}
 */
 package main
 
@@ -24,6 +17,7 @@ var logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 func check(err error) {
 	if err != nil {
 		logger.Error("unexpected error", "err", err)
+		//add the server impl for sending errors back
 		panic(err)
 	}
 }
@@ -35,8 +29,8 @@ func main() {
 	for {
 		file, err := listner.Accept()
 		check(err)
-		readConnection(file)
-		sendResponse(file)
+		ReadConnection(file)
+		SendResponse(file)
 
 	}
 }
