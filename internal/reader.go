@@ -1,11 +1,13 @@
-package main
-import(
-	"net"
+package internal
+
+import (
 	"bytes"
+	"net"
 	"os"
 	"strings"
 )
-//function returns the string slice of that from the bytes slice
+
+// formatBytes splits the raw header bytes into individual request lines.
 func formatBytes(header []byte) []string {
 	buff := []string{}
 	var temp string
@@ -26,8 +28,7 @@ func formatBytes(header []byte) []string {
 	return buff
 }
 
-
-func writeTofile(request []string) {
+func writeToFile(request []string) {
 	logfile, err := os.OpenFile("serverlogs.txt", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
 	check(err)
 	defer logfile.Close()
@@ -38,9 +39,6 @@ func writeTofile(request []string) {
 		check(err)
 	}
 }
-
-
-
 
 func ReadConnection(file net.Conn) {
 	stream := make([]byte, 1024)
@@ -57,7 +55,7 @@ func ReadConnection(file net.Conn) {
 		//Instead read until header end, parse the then if the body is there start reading else stop
 		if index != -1 {
 			stringrequest := formatBytes(buff[:index])
-			writeTofile(stringrequest)
+			writeToFile(stringrequest)
 			startline, err, a := HeaderParser(stringrequest)
 			check(err)
 			contentlength = a
@@ -76,7 +74,6 @@ func ReadConnection(file net.Conn) {
 			//if the reminder of the bytes in buf[index:] is smaller than the content length this mean there is more bytes to be read
 			// so we go again through the loop and read the byte
 			if len(buff[index+4:]) < contentlength {
-
 				logger.Info("waiting for remaining body bytes",
 					"content_length", contentlength,
 					"bytes_received", len(buff[index+4:]),
@@ -84,7 +81,7 @@ func ReadConnection(file net.Conn) {
 
 				continue
 			}
-			body := BodyParser(buff[index+4:])
+			body := BodyParser(buff[index+4 : index+4+contentlength])
 			logger.Info("parsed request body", "body_length", len(body))
 			break
 		} else {
@@ -92,5 +89,4 @@ func ReadConnection(file net.Conn) {
 		}
 	}
 }
-
 
