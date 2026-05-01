@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -8,12 +7,7 @@ import (
 	"os"
 )
 
-func SendResponse(conn net.Conn) {
-	msg := "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello\r\n"
-	n, err := conn.Write([]byte(msg))
-	check(err)
-	logger.Info("response sent", "bytes_written", n, "status_code", 200)
-}
+
 
 var logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 	Level: slog.LevelInfo,
@@ -35,7 +29,7 @@ func main() {
 		conn, err := listener.Accept()
 		check(err)
 		internal.ReadConnection(conn)
-		SendResponse(conn)
+		internal.SendResponse(conn)
 	}
 }
 

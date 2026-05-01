@@ -33,7 +33,7 @@ func HeaderParser(buff []string) (StartLine, error, int) {
 	}
 
 	// buf[1:] are headers
-	headermap, contentlength, err := HeaderfieldParser(buff[1:])
+	headermap, contentlength, err := headerfieldParser(buff[1:])
 	if err != nil {
 		return StartLine{}, err, 0
 	}
@@ -52,7 +52,7 @@ func fieldNameValidation(fieldName string) error {
 	return nil
 }
 
-func HeaderfieldParser(buff []string) (map[string]string, int, error) {
+func headerfieldParser(buff []string) (map[string]string, int, error) {
 	headermap := make(map[string]string)
 	seperator := ":"
 
